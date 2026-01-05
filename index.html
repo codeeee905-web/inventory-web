@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Simple Inventory</title>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<style>
+:root {
+  --bg: #f4f6f8;
+  --card: #ffffff;
+  --primary: #4f6ef7;
+  --danger: #e35d6a;
+  --text: #2c2f33;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 15px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+h2, h3 {
+  margin-bottom: 10px;
+}
+
+#login, #admin {
+  background: var(--card);
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 15px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+input {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-size: 14px;
+}
+
+input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+button {
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+button:hover {
+  opacity: 0.9;
+}
+
+button {
+  background: var(--primary);
+  color: #fff;
+}
+
+.admin-btn button {
+  margin-top: 5px;
+  width: 48%;
+}
+
+.admin-btn button:last-child {
+  background: var(--danger);
+}
+
+.item {
+  background: var(--card);
+  padding: 12px;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.item b {
+  font-size: 16px;
+}
+
+.item small {
+  color: var(--muted);
+}
+.table-container {
+  background: var(--card);
+  border-radius: 12px;
+  overflow-x: auto;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+thead {
+  background: #f1f5f9;
+}
+
+th, td {
+  padding: 12px;
+  text-align: left;
+  font-size: 14px;
+}
+
+th {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+tr {
+  border-bottom: 1px solid var(--border);
+}
+
+tr:last-child {
+  border-bottom: none;
+}
+
+tbody tr:hover {
+  background: #f9fafb;
+}
+
+.action-btns button {
+  width: auto;
+  padding: 6px 10px;
+  font-size: 12px;
+  margin-right: 5px;
+}
+</style>
+
+
+<!-- LOGIN -->
+<div id="login">
+  <input type="password" id="password" placeholder="Enter password">
+  <button onclick="login()">Login</button>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="admin" style="display:none;">
+  <h3>Admin Panel</h3>
+  <input id="name" placeholder="Item name">
+  <input id="qty" type="number" placeholder="Quantity">
+  <button id="logoutBtn" onclick="logout()" style="background:#6b7280;">Logout</button>
+  <button onclick="addItem()">Add Item</button>
+</div>
+<h3>Inventory List</h3>
+
+<div class="table-container">
+  <table>
+    <thead>
+      <tr>
+        <th>Item Name</th>
+        <th>Quantity</th>
+        <th id="actionHeader" style="display:none;">Action</th>
+      </tr>
+    </thead>
+    <tbody id="list"></tbody>
+  </table>
+</div>
+
+
+<script>
+/* 🔥 FIREBASE CONFIG 🔥 */
+const firebaseConfig = {
+  apiKey: "AIzaSyD1yCwdB0fM9dxNmip8N-AtK9Qnoh7eS-A",
+  authDomain: "simple-inventory-245f5.firebaseapp.com",
+  projectId: "simple-inventory-245f5",
+  storageBucket: "simple-inventory-245f5.firebasestorage.app",
+  messagingSenderId: "501248452090",
+  appId: "1:501248452090:web:0153cadb07062bce603043"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+const ADMIN_PASSWORD = "admin123";
+let isAdmin = false;
+
+/* LOGIN */
+function login() {
+  const pass = document.getElementById("password").value;
+  if (pass === ADMIN_PASSWORD) {
+    isAdmin = true;
+    document.getElementById("admin").style.display = "block";
+    alert("Admin mode");
+  } else {
+    alert("Viewer mode");
+  }
+}
+function logout() {
+  isAdmin = false;
+  document.getElementById("admin").style.display = "none";
+  alert("Logged out. Viewer mode activated.");
+
+  // Refresh table to hide action buttons
+  db.collection("items").onSnapshot(snapshot => {
+    const list = document.getElementById("list");
+    const actionHeader = document.getElementById("actionHeader");
+
+    list.innerHTML = "";
+    actionHeader.style.display = "none";
+
+    snapshot.forEach(doc => {
+      const item = doc.data();
+      const qtyNum = Number(item.qty);
+      const rowColor = qtyNum <= 5 ? 'style="background:#fde2e2;"' : '';
+
+      let row = `
+        <tr ${rowColor}>
+          <td><b>${item.name}</b></td>
+          <td>${item.qty}</td>
+        </tr>
+      `;
+      list.innerHTML += row;
+    });
+  });
+}
+/* ADD */
+function addItem() {
+  const name = document.getElementById("name").value;
+  const qty = document.getElementById("qty").value;
+
+  if (!name || !qty) return alert("Complete fields");
+
+  db.collection("items").add({ name, qty });
+
+  document.getElementById("name").value = "";
+  document.getElementById("qty").value = "";
+}
+
+/* DELETE */
+function deleteItem(id) {
+  if (confirm("Delete this item?")) {
+    db.collection("items").doc(id).delete();
+  }
+}
+
+/* EDIT */
+function editItem(id, oldQty) {
+  const newQty = prompt("Enter new quantity:", oldQty);
+  if (newQty !== null) {
+    db.collection("items").doc(id).update({
+      qty: newQty
+    });
+  }
+}
+
+/* REALTIME LIST *//* REALTIME LIST – TABLE VERSION *//* REALTIME LIST – TABLE VERSION WITH LOW STOCK */
+db.collection("items").onSnapshot(snapshot => {
+  const list = document.getElementById("list");
+  const actionHeader = document.getElementById("actionHeader");
+
+  list.innerHTML = "";
+  actionHeader.style.display = isAdmin ? "" : "none";
+
+  snapshot.forEach(doc => {
+    const item = doc.data();
+    const qtyNum = Number(item.qty); // siguraduhin number
+
+    // Check for low stock (<=5)
+    const rowColor = qtyNum <= 5 ? 'style="background:#fde2e2;"' : '';
+
+    let row = `
+      <tr ${rowColor}>
+        <td><b>${item.name}</b></td>
+        <td>${item.qty}</td>
+    `;
+
+    if (isAdmin) {
+      row += `
+        <td class="action-btns">
+          <button onclick="editItem('${doc.id}', '${item.qty}')">Edit</button>
+          <button onclick="deleteItem('${doc.id}')">Delete</button>
+        </td>
+      `;
+    }
+
+    row += `</tr>`;
+    list.innerHTML += row;
+  });
+});
+
+
+</script>
+
+</body>
+</html>
