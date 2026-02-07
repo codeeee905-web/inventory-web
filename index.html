@@ -1,166 +1,96 @@
+
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Simple Inventory</title>
+<title>Inventory Monitoring System</title>
+<style>
+  body { font-family: Arial, sans-serif; margin:20px; background:#f4f4f4; }
+  .header { display:flex; align-items:center; gap:15px; margin-bottom:20px; }
+  .header h1 { margin:0; font-size:24px; }
+  .header small { color:#555; }
+
+  .card { background:#fff; padding:15px; margin-bottom:15px; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,0.1); }
+  input { padding:5px; margin:5px 0; border-radius:4px; border:1px solid #ccc; }
+  button { padding:5px 10px; border:none; border-radius:4px; cursor:pointer; }
+  button.btn-danger { background:red; color:#fff; }
+  button.btn-muted { background:#aaa; color:#fff; }
+  .low-stock { color:red; font-weight:bold; font-size:12px; display:inline-block; margin-left:5px; }
+
+  table { width:100%; border-collapse:collapse; margin-top:10px; background:#fff; }
+  th, td { border:1px solid #ccc; padding:8px; text-align:left; }
+  th { background:#eee; }
+  .admin-actions button { margin-right:5px; }
+
+  #message { height:20px; margin:5px 0; font-weight:bold; }
+  #message.success { color:green; }
+  #message.error { color:red; }
+  #message.info { color:#555; }
+
+  #search { width:200px; margin-bottom:10px; }
+</style>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<style>
-:root {
-  --bg: #f4f6f8;
-  --card: #ffffff;
-  --primary: #4f6ef7;
-  --danger: #e35d6a;
-  --text: #2c2f33;
-  --muted: #6b7280;
-  --border: #e5e7eb;
-}
+</head>
 
-* {
-  box-sizing: border-box;
-}
+<body>
 
-body {
-  margin: 0;
-  padding: 15px;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-}
-
-h2, h3 {
-  margin-bottom: 10px;
-}
-
-#login, #admin {
-  background: var(--card);
-  padding: 15px;
-  border-radius: 10px;
-  margin-bottom: 15px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-}
-
-input {
-  padding: 10px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  font-size: 14px;
-}
-
-input:focus {
-  outline: none;
-  border-color: var(--primary);
-}
-
-button {
-  padding: 10px;
-  border-radius: 8px;
-  border: none;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-button:hover {
-  opacity: 0.9;
-}
-
-button {
-  background: var(--primary);
-  color: #fff;
-}
-
-.admin-btn button {
-  margin-top: 5px;
-  width: 48%;
-}
-
-.admin-btn button:last-child {
-  background: var(--danger);
-}
-
-.item {
-  background: var(--card);
-  padding: 12px;
-  border-radius: 10px;
-  margin-bottom: 10px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-}
-
-.item b {
-  font-size: 16px;
-}
-
-.item small {
-  color: var(--muted);
-}
-.table-container {
-  background: var(--card);
-  border-radius: 12px;
-  overflow-x: auto;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-thead {
-  background: #f1f5f9;
-}
-
-th, td {
-  padding: 12px;
-  text-align: left;
-  font-size: 14px;
-}
-
-th {
-  color: var(--muted);
-  font-weight: 600;
-}
-
-tr {
-  border-bottom: 1px solid var(--border);
-}
-
-tr:last-child {
-  border-bottom: none;
-}
-
-tbody tr:hover {
-  background: #f9fafb;
-}
-
-.action-btns button {
-  width: auto;
-  padding: 6px 10px;
-  font-size: 12px;
-  margin-right: 5px;
-}
-</style>
-
-
-<!-- LOGIN -->
-<div id="header" style="display:flex; align-items:center; margin-bottom:20px;">
-  <img src="logo.png" alt="School Logo" style="height:60px; margin-right:15px;">
-  <h1 style="font-size:24px; color:var(--primary); margin:0;">Barangay Longos Senior High School</h1>
+<!-- Header -->
+<div class="header">
+  <img src="logo.png" height="60">
+  <div>
+    <h1>Inventory Monitoring System</h1>
+    <small>Barangay Longos Senior High School</small>
+  </div>
 </div>
-<div id="login">
-  <input type="password" id="password" placeholder="Enter password">
+
+<!-- Policy -->
+<div class="card">
+  <h3>Inventory Management Policy</h3>
+  <p>This system follows a standardized inventory procedure. Only authorized admins can modify inventory records to ensure accuracy and reliability.</p>
+</div>
+
+<!-- Roles -->
+<div class="card">
+  <h3>User Roles</h3>
+  <ul>
+    <li><b>Admin</b> – Can add, edit, delete items, verify stock, export reports</li>
+    <li><b>Viewer</b> – Can view inventory records only</li>
+  </ul>
+</div>
+
+<!-- Login -->
+<div class="card" id="login">
+  <h3>Login</h3>
+  <input type="password" id="password" placeholder="Enter admin password">
   <button onclick="login()">Login</button>
 </div>
 
-<!-- ADMIN PANEL -->
-<div id="admin" style="display:none;">
+<!-- Admin Panel -->
+<div class="card" id="admin" style="display:none;">
   <h3>Admin Panel</h3>
   <input id="name" placeholder="Item name">
   <input id="qty" type="number" placeholder="Quantity">
-  <button id="logoutBtn" onclick="logout()" style="background:#6b7280;">Logout</button>
   <button onclick="addItem()">Add Item</button>
+  <button class="btn-muted" onclick="logout()">Logout</button>
+  
+  <!-- Admin extra buttons -->
+  <div id="admin-buttons" style="margin-top:10px;">
+    <button onclick="verifyStock()">Verify Stock</button>
+    <button onclick="exportCSV()">Export CSV</button>
+  </div>
 </div>
+
+<!-- Messages -->
+<div id="message"></div>
+
+<!-- Search -->
+<input id="search" placeholder="Search items..." oninput="filterItems()">
+
+<!-- Inventory Table -->
 <h3>Inventory List</h3>
+<p style="color:#555;font-size:13px;">Real-time inventory. Low stock items highlighted.</p>
 
 <div class="table-container">
   <table>
@@ -175,129 +105,178 @@ tbody tr:hover {
   </table>
 </div>
 
-
 <script>
-/* 🔥 FIREBASE CONFIG 🔥 */
-const firebaseConfig = {
+// Firebase initialization
+firebase.initializeApp({
   apiKey: "AIzaSyD1yCwdB0fM9dxNmip8N-AtK9Qnoh7eS-A",
   authDomain: "simple-inventory-245f5.firebaseapp.com",
-  projectId: "simple-inventory-245f5",
-  storageBucket: "simple-inventory-245f5.firebasestorage.app",
-  messagingSenderId: "501248452090",
-  appId: "1:501248452090:web:0153cadb07062bce603043"
-};
-
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-
-const ADMIN_PASSWORD = "admin123";
-let isAdmin = false;
-
-/* LOGIN */
-function login() {
-  const pass = document.getElementById("password").value;
-  if (pass === ADMIN_PASSWORD) {
-    isAdmin = true;
-    document.getElementById("admin").style.display = "block";
-    alert("Admin mode");
-  } else {
-    alert("Viewer mode");
-  }
-}
-function logout() {
-  isAdmin = false;
-  document.getElementById("admin").style.display = "none";
-  alert("Logged out. Viewer mode activated.");
-
-  // Refresh table to hide action buttons
-  db.collection("items").onSnapshot(snapshot => {
-    const list = document.getElementById("list");
-    const actionHeader = document.getElementById("actionHeader");
-
-    list.innerHTML = "";
-    actionHeader.style.display = "none";
-
-    snapshot.forEach(doc => {
-      const item = doc.data();
-      const qtyNum = Number(item.qty);
-      const rowColor = qtyNum <= 5 ? 'style="background:#fde2e2;"' : '';
-
-      let row = `
-        <tr ${rowColor}>
-          <td><b>${item.name}</b></td>
-          <td>${item.qty}</td>
-        </tr>
-      `;
-      list.innerHTML += row;
-    });
-  });
-}
-/* ADD */
-function addItem() {
-  const name = document.getElementById("name").value;
-  const qty = document.getElementById("qty").value;
-
-  if (!name || !qty) return alert("Complete fields");
-
-  db.collection("items").add({ name, qty });
-
-  document.getElementById("name").value = "";
-  document.getElementById("qty").value = "";
-}
-
-/* DELETE */
-function deleteItem(id) {
-  if (confirm("Delete this item?")) {
-    db.collection("items").doc(id).delete();
-  }
-}
-
-/* EDIT */
-function editItem(id, oldQty) {
-  const newQty = prompt("Enter new quantity:", oldQty);
-  if (newQty !== null) {
-    db.collection("items").doc(id).update({
-      qty: newQty
-    });
-  }
-}
-
-/* REALTIME LIST *//* REALTIME LIST – TABLE VERSION *//* REALTIME LIST – TABLE VERSION WITH LOW STOCK */
-db.collection("items").onSnapshot(snapshot => {
-  const list = document.getElementById("list");
-  const actionHeader = document.getElementById("actionHeader");
-
-  list.innerHTML = "";
-  actionHeader.style.display = isAdmin ? "" : "none";
-
-  snapshot.forEach(doc => {
-    const item = doc.data();
-    const qtyNum = Number(item.qty); // siguraduhin number
-
-    // Check for low stock (<=5)
-    const rowColor = qtyNum <= 5 ? 'style="background:#fde2e2;"' : '';
-
-    let row = `
-      <tr ${rowColor}>
-        <td><b>${item.name}</b></td>
-        <td>${item.qty}</td>
-    `;
-
-    if (isAdmin) {
-      row += `
-        <td class="action-btns">
-          <button onclick="editItem('${doc.id}', '${item.qty}')">Edit</button>
-          <button onclick="deleteItem('${doc.id}')">Delete</button>
-        </td>
-      `;
-    }
-
-    row += `</tr>`;
-    list.innerHTML += row;
-  });
+  projectId: "simple-inventory-245f5"
 });
 
+const db = firebase.firestore();
+const ADMIN_PASSWORD = "admin123";
+let isAdmin = false;
+let unsubscribe = null;
 
+// Helper function to show messages
+function showMessage(msg, type="info") {
+  const msgDiv = document.getElementById("message");
+  msgDiv.textContent = msg;
+  msgDiv.className = type;
+  setTimeout(() => { msgDiv.textContent = ""; msgDiv.className = ""; }, 3000);
+}
+
+// LOGIN / LOGOUT
+function login() {
+  const pass = document.getElementById("password").value;
+  if(pass === ADMIN_PASSWORD){
+    isAdmin = true;
+    document.getElementById("admin").style.display = "block";
+    showMessage("Admin access granted", "success");
+  } else {
+    showMessage("Viewer mode enabled", "info");
+  }
+  renderList();
+}
+
+function logout(){
+  isAdmin = false;
+  document.getElementById("admin").style.display = "none";
+  renderList();
+}
+
+// ADD ITEM
+function addItem() {
+  const nameInput = document.getElementById("name").value.trim();
+  const qtyInput = Number(document.getElementById("qty").value);
+  if(!nameInput || qtyInput < 0) return showMessage("Invalid input", "error");
+
+  db.collection("items").add({
+    name: nameInput,
+    qty: qtyInput,
+    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(() => {
+    document.getElementById("name").value = "";
+    document.getElementById("qty").value = "";
+    showMessage("Item added successfully", "success");
+  }).catch(() => showMessage("Error adding item", "error"));
+}
+
+// EDIT ITEM WITH REASON
+function editItem(id, oldQty) {
+  const newQty = prompt("Enter new quantity:", oldQty);
+  if(newQty === null || isNaN(newQty)) return;
+  const reason = prompt("Reason for stock adjustment:");
+  if(!reason) return showMessage("Adjustment canceled: Reason required", "error");
+
+  db.collection("items").doc(id).update({
+    qty: Number(newQty),
+    adjustmentReason: reason,
+    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+  }).then(() => showMessage("Quantity updated", "success"))
+    .catch(() => showMessage("Error updating item", "error"));
+}
+
+// DELETE ITEM
+function deleteItem(id){
+  if(confirm("Delete item?")){
+    db.collection("items").doc(id).delete()
+      .then(() => showMessage("Item deleted", "success"))
+      .catch(() => showMessage("Error deleting item", "error"));
+  }
+}
+
+// STOCK VERIFICATION (admin)
+function verifyStock() {
+  db.collection("items").get().then(snapshot => {
+    snapshot.forEach(doc => {
+      const item = doc.data();
+      console.log(`Verified: ${item.name} - Qty: ${item.qty}`);
+    });
+    showMessage("Stock verification completed (check console for details)", "success");
+  });
+}
+
+// SEARCH / FILTER
+function filterItems() {
+  const term = document.getElementById("search").value.toLowerCase();
+  document.querySelectorAll("#list tr").forEach(row => {
+    const name = row.querySelector("td").textContent.toLowerCase();
+    row.style.display = name.includes(term) ? "" : "none";
+  });
+}
+
+// CSV EXPORT (safe version)
+function exportCSV() {
+  db.collection("items").get()
+    .then(snapshot => {
+      let rows = [["Item Name","Quantity","Last Updated"]];
+      
+      snapshot.forEach(doc => {
+        const item = doc.data();
+        let date = "";
+
+        if(item.lastUpdated){
+          try {
+            date = item.lastUpdated.toDate 
+                    ? item.lastUpdated.toDate().toLocaleString() 
+                    : new Date(item.lastUpdated.seconds*1000).toLocaleString();
+          } catch(e){
+            date = "";
+          }
+        }
+
+        rows.push([item.name || "", item.qty || 0, date]);
+      });
+
+      const csvContent = rows.map(r => r.map(c => `"${c}"`).join(",")).join("\n");
+      const blob = new Blob([csvContent], {type: "text/csv"});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "inventory.csv";
+      a.style.display = "none";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      showMessage("CSV na-export nang maayos", "success");
+    })
+    .catch(err => {
+      console.error(err);
+      showMessage("May error sa pag-export ng CSV", "error");
+    });
+}
+
+// RENDER LIST
+function renderList() {
+  if(unsubscribe) unsubscribe();
+  const list = document.getElementById("list");
+  const actionHeader = document.getElementById("actionHeader");
+  actionHeader.style.display = isAdmin ? "" : "none";
+
+  unsubscribe = db.collection("items").onSnapshot(snapshot => {
+    list.innerHTML = "";
+    snapshot.forEach(doc => {
+      const item = doc.data();
+      const low = item.qty <= 5;
+      list.innerHTML += `
+        <tr>
+          <td>${item.name} ${low ? '<div class="low-stock">Low Stock</div>' : ''}</td>
+          <td>${item.qty}</td>
+          ${isAdmin ? `<td class="admin-actions">
+            <button onclick="editItem('${doc.id}','${item.qty}')">Edit</button>
+            <button class="btn-danger" onclick="deleteItem('${doc.id}')">Delete</button>
+          </td>` : ""}
+        </tr>
+      `;
+    });
+  });
+}
+
+// INITIAL RENDER
+renderList();
 </script>
 
 </body>
